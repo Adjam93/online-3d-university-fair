@@ -1,0 +1,335 @@
+﻿ body {
+            background-color: #f0f0f0;
+            /*background-image: url("images/sky.jpg");*/
+            margin: 0;
+            overflow: hidden;
+            font-family: monospace;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        a {
+            color: #0078ff;
+        }
+
+
+        /******CSS FOR JQUERY DIALOG BOX STARTS*/
+        .ui-dialog .ui-dialog-title {
+            text-align: center;
+            width: 100%;
+        }
+
+        /*.ui-widget-header,.ui-state-default, ui-button{
+            background:#b9cd6d;
+            border: 1px solid #b9cd6d;
+            color: #FFFFFF;
+            font-weight: bold;
+         }/*****JQUERY DIALOG CSS ENDS*/
+
+        /********CSS STYLING FOR THE NAVIGATIONAL BAR WITHIN THE DIALOG STARTS*/
+        .Content {
+            float: left;
+        }
+
+        ul {
+            margin: 0px;
+            padding: 0px;
+            list-style-type: none;
+        }
+
+        .var_nav {
+            position: relative;
+            background: #ccc;
+            width: 300px;
+            height: 70px;
+            margin-bottom: 5px;
+        }
+
+        .background {
+            width: 70px;
+            height: 70px;
+            position: absolute;
+            background: #4d4dff;
+            color: #fff;
+            z-index: 2;
+        }
+
+            .background i {
+                position: relative;
+            }
+
+        .info_title {
+            position: absolute;
+            width: 100%;
+            z-index: 3;
+            color: #fff;
+        }
+
+            .info_title:hover .icon {
+                transform: rotate(360deg);
+            }
+
+        .var_nav:hover .background {
+            width: 100%;
+            background: #4d4dff;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .var_nav:hover a {
+            font-weight: bold;
+            transition: all .5s ease-in-out;
+        }
+
+        .icon {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            text-align: center;
+            color: #fff;
+            float: left;
+            transition: all .5s ease-in-out;
+            float: left;
+        }
+
+            .icon i {
+                top: 22px;
+                position: relative;
+            }
+
+        .var_nav a {
+            display: block;
+            position: absolute;
+            float: left;
+            font-family: arial;
+            color: #000000;
+            text-decoration: none;
+            width: 100%;
+            height: 70px;
+            text-align: center;
+        }
+
+        span {
+            margin-top: 25px;
+            display: block;
+        }
+        /********CSS STYLING FOR THE NAVIGATIONAL BAR ENDS*/
+
+        /******CSS FOR A-Z INDEX STARTS*/
+        #azindex {
+            background: #75B9D0;
+            float: right;
+            margin: 5px 70px 20px 0;
+            padding: 0px 5px 8px 5px; /*top, right, bottom, left*/
+            width: 720px;
+        }
+
+        #index {
+            font: bold 100% Verdana, Helvetica, sans-serif;
+        }
+
+            #index li {
+                float: left;
+                height: 2em;
+                list-style-type: none;
+                margin: 0.65em 0.3em;
+                padding: 0;
+                width: 3em;
+            }
+
+            * html #index li {
+                margin: 0.2em 0.2em;
+            }
+
+            #index a:link, #index a:visited {
+                background: #fff;
+                color: navy;
+                display: block;
+                height: 2em; /*1.2em*/
+                padding: 0.75em 0 0 0;
+                text-align: center;
+                text-decoration: none;
+                width: 3em; /*2.4em*/
+                z-index: 1;
+            }
+
+            #index li a:hover {
+                background: #93D1E4;
+                color: #fff;
+                text-decoration: underline;
+            }
+        /******CSS FOR A-Z INDEX ENDS*/
+
+        /*CSS for position of loading icon*/
+        .wrapper {
+			position:absolute;
+			top:50%;
+			left:50%;
+		}
+
+        /*******CSS FOR STYLING THE JQUERY DIALOG BUTTONS FOR THE APPLICATION INFORMATION*****/
+        .ui-dialog .ui-dialog-buttonpane {
+            border-top-width:2px; border-bottom-width:2px;
+        }
+
+         .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset
+         { 
+            width: 100%;
+            text-align:center;
+        }
+
+        .ui-dialog-buttonset .control
+         {      
+	        color: #ffffff;
+	        background: #644;
+            border-radius: 15px;
+            outline:none; 
+            border:none;          
+        }
+
+         .ui-dialog-buttonset .control:hover
+         {      
+	        background: red;     
+         }
+
+         .ui-dialog-buttonset .about
+         {
+             color: #ffffff;
+             background:green;
+             border-radius: 5px;
+             outline:none; 
+             border:none;        
+         }
+
+            .ui-dialog-buttonset .about:hover
+            {
+                background: red;
+            }
+
+          .ui-dialog-buttonset .feedback
+          {
+             color: #ffffff;
+             background:blue; 
+             outline:none; 
+             border:none;                      
+          }
+
+        .ui-dialog-buttonset .feedback:hover 
+        {
+            background: red;
+        }
+
+        #feedback-link
+        {
+            text-align:center;
+        }
+
+          #feedback-button
+         {
+            font-size: 100%;
+	        color: #ffffff;
+	        background-color: #644;
+	        border-radius: 5px;
+            position: relative;
+            top: 60px;
+            line-height:100px;
+            height: 32px;
+            padding-left: 66px;
+            padding-bottom:100px;
+            border: 1px solid #000;
+            background: #ff9900 url(../images/feedback.png) no-repeat 10px center;
+            cursor: pointer;           
+         }
+
+        .hr-style
+         {
+            height: 30px;
+            border-style: solid;
+            border-color: black;
+            border-width: 1px 0 0 0;
+            border-radius: 20px;
+         }
+
+            .hr-style:before
+             {
+                display: block;
+                content: "";
+                height: 30px;
+                margin-top: -31px;
+                border-style: solid;
+                border-color: black;
+                border-width: 0 0 1px 0;
+                border-radius: 20px;
+            }
+       /*******CSS FOR STYLING THE JQUERY DIALOG BUTTONS ENDS*****/
+
+        #social a {
+            display: block;
+            position: absolute;
+            float: left;
+            font-family: arial;
+            color: #000000;
+            text-decoration: none;
+            width: 100%;
+            height: 70px;
+            text-align: center;
+        }
+
+       /**********CSS FOR CONTACT DETAILS AND TESTIMONIAL SECTIONS*********/
+       #contact_details
+              {
+                 background: #75B9D0;
+                 float: right;
+                 margin: 5px 70px 20px 0;
+                 padding: 0px 5px 8px 5px; /*top, right, bottom, left*/
+                 width: 720px;
+                 font-family: Verdana, Helvetica, sans-serif;
+              }
+
+        #contact_details, #testimonials
+              {
+                 background: #75B9D0;
+                 float: right;
+                 margin: 5px 70px 20px 0;
+                 padding: 0px 5px 8px 5px; /*top, right, bottom, left*/
+                 width: 720px;
+                 font-family: Verdana, Helvetica, sans-serif;
+                 content: open-quote;
+                 content: close-quote;
+              }
+
+            #testimonials blockquote {
+                border:none;
+                font-family:Georgia, "Times New Roman", Times, serif;
+                position: relative; 
+                margin: 0 auto; 
+                padding-left: 0.4em; 
+                }
+
+               #testimonials blockquote:before { 
+                    content: "\201C";
+                    font-size:70px;
+                    color:#889c0b;
+                    position: absolute; 
+                    top: -0.2em;
+                    left: -0.2em; 
+                    font-family: 'Georgia'; 
+                } 
+               #testimonials blockquote:after { 
+                    content: "\201D";
+                    font-size:70px;
+                    color:#889c0b;
+                    position: absolute; 
+                    bottom: -0.65em;
+                    right: 0; 
+                    font-family: 'Georgia'; 
+                }
+
+               .review_link{
+                    width:30%;
+                    float:left;
+               }
+
+             .review_link:hover {
+                color: crimson;
+              }
+             /**********CSS FOR CONTACT DETAILS AND TESTIMONIAL SECTIONS ENDS*********/
