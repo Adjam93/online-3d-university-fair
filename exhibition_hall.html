@@ -1,0 +1,607 @@
+﻿<!doctype html>
+<!--
+    ***Collada Mouse picking section (selecting to view the chosen university) reference following resources by Jens Arps:
+    ***http://jensarps.github.io/webgl_experiments/collada_picking_ray_r62.html
+    ***http://jensarps.de/2013/10/29/mouse-picking-collada-models-with-three-js-part-ii/
+-->
+<html>
+<head>
+    <title>Exhibition Hall</title>
+    <meta charset="utf-8">
+
+    <link rel="shortcut icon" href="">
+
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script> 
+    <script src="js/heartcode-canvasloader-min-0.9.1.js"></script>
+
+    <link rel='stylesheet prefetch' href='http://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.min.css'>
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/main_style.css">
+
+    <script>
+        $(function () {
+
+            $("#slideshow > div:gt(0)").hide(); //Get all images greater then index 0 (the first one)
+
+            setInterval(function () {
+                $('#slideshow > div:first')
+                  .fadeOut(1000)
+                  .next()
+                  .fadeIn(1000)
+                  .end()
+                  .appendTo('#slideshow');
+            }, 5000);
+
+            $("#slideshow2 > div:gt(0)").hide(); //Get all images greater then index 0 (the first one)
+
+            setInterval(function () {
+                $('#slideshow2 > div:first')
+                  .fadeOut(1000)
+                  .next()
+                  .fadeIn(1000)
+                  .end()
+                  .appendTo('#slideshow2');
+            }, 5000);
+
+        });
+    </script>
+
+   <script type="application/x-glsl" id="sky-vertex">
+        varying vec2 vUV;
+
+        void main() {
+        vUV = uv;
+        vec4 pos = vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * pos;
+        }
+    </script>
+
+    <script type="application/x-glsl" id="sky-fragment">
+        uniform sampler2D texture;
+        varying vec2 vUV;
+
+        void main() {
+        vec4 sample = texture2D(texture, vUV);
+        gl_FragColor = vec4(sample.xyz, sample.w);
+        }
+    </script>
+
+</head>
+
+<body>
+  
+    <script src="js/info.js"></script>
+    <div id="infoButton"></div>
+    <div id="infoBox" title="Application Information" style="display:none">
+    </div>
+
+    <div id="stats"></div>
+
+    <div id="canvasloader-container" class="wrapper"></div>
+
+    <script src="js/three.min.js"></script>
+    <script src="js/ColladaLoader.js"></script>
+    <script src="js/Detector.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/Projector.js"></script>
+    <script src="js/THREEx.KeyboardState.js"></script>
+    <script src="js/Tween.js"></script>
+
+    <script>
+
+        if (!Detector.webgl) Detector.addGetWebGLMessage();
+
+        var container, stats;
+        var camera, controls, scene, skyBox, renderer;
+
+        var keyboard = new THREEx.KeyboardState();
+        var clock = new THREE.Clock();
+        var bbHelper;
+
+        var raycaster = new THREE.Raycaster();
+        var projector = new THREE.Projector();
+        var directionVector = new THREE.Vector3();
+
+        var SCREEN_HEIGHT = window.innerHeight;
+        var SCREEN_WIDTH = window.innerWidth;
+
+        var dae;
+        var collidableMeshList = []; //Array to add collidable objects, to be used in intersection tests
+
+        var clickInfo = {
+            x: 0,
+            y: 0,
+            userHasClicked: false
+        };
+
+        var statsNode = document.getElementById('stats');
+        var marker;
+
+        init();
+        animate();
+
+        function setupTween() {
+            //Initial camera position (outside exhibtion hall)
+            var position =
+                {
+                    x: 1660, y: 85, z: 2900
+                };
+
+            //Ending camera position (inside exhibtion hall)
+            var target =
+                {
+                    x: 1660, y: 85, z: 0
+                    //Go from starting Z (2900) to 0, to create animation effect of moving towards and into exhibition hall
+                };
+
+            var tween = new TWEEN.Tween(position)
+              .to(target, 15000)
+              .onUpdate(function () //To make 3D object move along, the scene needs to be notified at every modification
+              {
+                  camera.position.set(this.x, this.y, this.z);
+              })
+              .start();
+        }
+
+        function init() {
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            container.addEventListener('click', function (evt) {
+                // The user has clicked; note this event
+                // and the click's coordinates
+                clickInfo.userHasClicked = true;
+                clickInfo.x = evt.clientX;
+                clickInfo.y = evt.clientY;
+            }, false);
+
+            // hide the event from controls
+            // and disable moving via mouse buttons
+            var stopEvent = function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            };
+            container.addEventListener('mousedown', stopEvent, false);
+            container.addEventListener('mouseup', stopEvent, false);
+
+            /* Scene & Camera */
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, SCREEN_WIDTH / SCREEN_HEIGHT, 0.1, 10000);
+            camera.position.set(1660, 85, 2900);
+            camera.lookAt(0, 0, 0);
+            scene.add(camera);
+
+            /* Renderer */
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true }); //Use {alpha: true} for transparency
+            renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT); 
+            renderer.setClearColor(0xC9D9D8); //Set Background colour of scene (use (0xC9D9D8, 0) for transparent colour)
+            container.appendChild(renderer.domElement);
+
+            /* Lights */
+            // Ambient light has no direction, it illuminates every object with the same
+            // intensity. If only ambient light is used, no shading effects will occur.
+            var ambientLight = new THREE.AmbientLight(0x404040, 1.0);
+            scene.add(ambientLight);
+
+            // Directional light has a source and shines in all directions, like the sun.
+            // This behaviour creates shading effects.
+            var directionalLight = new THREE.DirectionalLight(0xffffff, 0.7); //White colour, 0.7 intensity (1.0 = full intensity)
+            directionalLight.position.set(0.0, 1.0, 1.0); //Light position, up on Y axis and outward on Z axis (towards entrance)
+            scene.add(directionalLight);
+
+            var directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight2.position.set(0.0, 1.0, -1.0); //Light position, up on Y axis and inward on Z axis (towards back of hall)
+            scene.add(directionalLight2);
+
+            var directionalLight3 = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight3.position.set(1.0, 0.0, 0.0); //Light position, right on the X axis, to light right side of hall
+            scene.add(directionalLight3);
+
+            var directionalLight4 = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight4.position.set(-1.0, 0.0, 0.0);//Light position, left on the X axis, to light left side of hall
+            scene.add(directionalLight4);
+
+            var directionalLight5 = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight5.position.set(0.0, 0.0, 0.0);//Light position, centre of the scene
+            scene.add(directionalLight5);
+
+            var textureLoader = new THREE.TextureLoader();
+
+            var geometry = new THREE.SphereGeometry(5000, 60, 40);
+            var uniforms = {
+                texture: { type: 't', value: textureLoader.load('images/skydome.jpg') }
+            };
+
+            var material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: document.getElementById('sky-vertex').textContent,
+                fragmentShader: document.getElementById('sky-fragment').textContent
+            });
+
+            skyBox = new THREE.Mesh(geometry, material);
+            skyBox.scale.set(-1, 1, 1);
+            skyBox.eulerOrder = 'XZY';
+            skyBox.renderDepth = 1000.0;
+
+
+            // GROUND
+
+            var groundGeo = new THREE.PlaneBufferGeometry(10000, 10000);
+            var groundMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x050505 });
+            groundMat.color.setHSL(0.095, 1, 0.75);
+
+            var ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -33;
+            scene.add(ground);
+
+            ground.receiveShadow = true;
+
+           /* //add ground 
+            var grassTex = THREE.ImageUtils.loadTexture('images/grass.jpg');
+            grassTex.wrapS = THREE.RepeatWrapping;
+            grassTex.wrapT = THREE.RepeatWrapping;
+            grassTex.repeat.x = 256;
+            grassTex.repeat.y = 256;
+            var groundMat = new THREE.MeshBasicMaterial({ map: grassTex });
+
+            var groundGeo = new THREE.PlaneGeometry(8000, 8000);
+
+            var ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.position.y = -40.9; //lower it 
+            ground.rotation.x = -Math.PI / 2; //-90 degrees around the xaxis 
+            //IMPORTANT, draw on both sides 
+            ground.doubleSided = true;
+            scene.add(ground);*/
+
+
+            /* Collada Objects */
+            var loader = new THREE.ColladaLoader();
+                loader.options.convertUpAxis = true;          
+
+                loader.load('Exhibit_Hall.dae', function (collada) {
+                    dae = collada.scene;
+                    dae.position.set(0, 0, 0); //x,y,z
+                    dae.scale.set(1.5, 1.5, 1.5);
+
+                    THREE.DefaultLoadingManager.onLoad = function ()
+                        {
+                            cl.hide(); //Hide the canvas loader/loading symbol
+                            scene.add(skyBox);
+                            scene.add(dae); //Add collada file to the scene  
+                            setupTween(); //Call function to start animation (tween)
+                        };
+                    }, function (xhr) {
+                        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                    });
+       
+            var rotateAngle = Math.PI / 2;
+
+            var material = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0 });
+            var material2 = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+
+            var geometry = new THREE.BoxGeometry(1645, 800, -14);
+            var wall1 = new THREE.Mesh(geometry, material);  //Left Front Wall
+            wall1.position.set(668, 65, -74);
+            scene.add(wall1);
+            collidableMeshList.push(wall1);
+
+            var geometry1 = new THREE.BoxGeometry(194, 150, -138);
+            var boothBox1 = new THREE.Mesh(geometry1, material);
+            boothBox1.position.set(1569, 35, -1152); //Nottingham Booth
+            scene.add(boothBox1);
+            collidableMeshList.push(boothBox1);
+
+            var geometry2 = new THREE.BoxGeometry(194, 150, -138);
+            var boothBox2 = new THREE.Mesh(geometry2, material);
+            boothBox2.position.set(1869, 35, -1152); //Manchester Booth
+            scene.add(boothBox2);
+            collidableMeshList.push(boothBox2);
+            
+            var geometry3 = new THREE.BoxGeometry(194, 150, -133);
+            var boothBox3 = new THREE.Mesh(geometry3, material);
+            boothBox3.position.set(837, 35, -1147); //Brighton Booth
+            boothBox3.rotation.y = rotateAngle;
+            scene.add(boothBox3);
+            collidableMeshList.push(boothBox3);
+
+            var geometry4 = new THREE.BoxGeometry(194, 150, -133);
+            var boothBox4 = new THREE.Mesh(geometry4, material);
+            boothBox4.position.set(833, 35, -867); //Northampton Booth
+            boothBox4.rotation.y = rotateAngle;
+            scene.add(boothBox4);
+            collidableMeshList.push(boothBox4);
+
+            var geometry5 = new THREE.BoxGeometry(194, 150, -133);
+            var boothBox5 = new THREE.Mesh(geometry5, material);
+            boothBox5.position.set(272, 35, -857); //Coventry Booth
+            boothBox5.rotation.y = rotateAngle;
+            scene.add(boothBox5);
+            collidableMeshList.push(boothBox5);
+
+            var geometry6 = new THREE.BoxGeometry(194, 150, -133);
+            var boothBox6 = new THREE.Mesh(geometry6, material);
+            boothBox6.position.set(266, 35, -635); //Bath Booth
+            boothBox6.rotation.y = rotateAngle;
+            scene.add(boothBox6);
+            collidableMeshList.push(boothBox6);
+
+            var geometry7 = new THREE.BoxGeometry(194, 150, -133);
+            var boothBox7 = new THREE.Mesh(geometry7, material);
+            boothBox7.position.set(263, 35, -413); //Aston Booth
+            boothBox7.rotation.y = rotateAngle;
+            scene.add(boothBox7);
+            collidableMeshList.push(boothBox7);
+          
+            var boxGeometry = new THREE.BoxGeometry(1, 40, 1, 20, 20, 20);
+            MovingCube = new THREE.Mesh(boxGeometry, material2);
+            MovingCube.position.copy(camera.position);
+            scene.add(MovingCube);
+
+            /* hit point marker 
+            marker = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshLambertMaterial({ color: 0xff0000 }));
+            scene.add(marker);*/
+        }
+
+        function movement() {
+            var delta = clock.getDelta(); //Get the seconds passed since the last call to this method.
+            var moveDistance = 200 * delta; //Move 200 pixels per second
+            var rotateAngle = Math.PI / 2 * delta;   // pi/2 radians (90 degrees) per second
+
+            if (keyboard.pressed("up")) {
+                camera.translateZ(-moveDistance); //If up arrow key pressed - move camera on negative Z direction (forward)
+                MovingCube.translateZ(-moveDistance); //Move the cube that is set at the camera position to check for collisions
+
+                /*statsNode.innerHTML = 
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+            }
+
+            if (keyboard.pressed("down")) {
+                camera.translateZ(moveDistance); //If down arrow key pressed - move camera on positive Z direction (backward)
+                MovingCube.translateZ(moveDistance);
+                
+               /*  statsNode.innerHTML =
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+            }
+
+            if (keyboard.pressed("left")) {
+                //camera.position.x -= moveDistance; // This does not work, it only moves the camera, it does not translate the position
+                camera.translateX(-moveDistance); //If left arrow key pressed - move camera on negative X direction
+                MovingCube.translateX(-moveDistance);
+              
+                /*statsNode.innerHTML =
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+            }
+
+            if (keyboard.pressed("right"))
+               {
+                camera.translateX(moveDistance);  //If right arrow key pressed - move camera on positive X direction  
+                MovingCube.translateX(moveDistance);
+                
+                /*statsNode.innerHTML =
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+              }
+
+
+            //Rotate camera / look around
+            if (keyboard.pressed("A")) {
+                camera.rotation.y += rotateAngle; //Turn the camera to the left when pressing "a" key (positive Y rotation)
+                MovingCube.rotation.y += rotateAngle;
+               
+                /*statsNode.innerHTML =
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+            }
+
+            if (keyboard.pressed("D")) {
+                camera.rotation.y -= rotateAngle;  //Turn the camera to the right when pressing "d" key (negative Y rotation)
+                MovingCube.rotation.y -= rotateAngle;
+                
+               /* statsNode.innerHTML =
+                       camera.position.x + '<br>' + camera.position.y + '<br>' + camera.position.z;*/
+            }
+
+            //if (keyboard.pressed("W"))
+            //    camera.rotation.x += rotateAngle;  //Turn the camera to look up when pressing "w" key (positive X rotation)
+
+            //if (keyboard.pressed("S"))
+            //    camera.rotation.x -= rotateAngle;  //Turn the camera to look down when pressing "s" key (negative X rotation)
+
+
+            var originPoint = camera.position.clone();
+
+            for (var vertexIndex = 0; vertexIndex < MovingCube.geometry.vertices.length; vertexIndex++) {
+                var localVertex = MovingCube.geometry.vertices[vertexIndex].clone();
+                var globalVertex = localVertex.applyMatrix4(MovingCube.matrix);
+                var directionVector = globalVertex.sub(MovingCube.position);
+
+                var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize()); //Origin from camera, direction from where the camera/moving cube is facing
+                var collisionResults = ray.intersectObjects(collidableMeshList);
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+
+                    camera.position.x = collisionResults[0].point.x; //Stop the camera from moving past this collision point on x axis
+                    camera.position.z = collisionResults[0].point.z; //Stop the camera from moving past this collision point on z axis
+                }
+                
+            }
+        }
+
+        function dialog() {
+
+            var $activeDialogs = $(".ui-dialog:visible").find('.ui-dialog-content');
+            $activeDialogs.dialog('close'); //Close any other open dialogs
+
+            //Function to load the jquery dialog - which displays the university menu
+            $("#notts_dialog").dialog(
+                {
+                    show:
+                    {
+                        effect: "blind", //Blind effect, fades in for a total of 1 second
+                        duration: 1000
+                    },
+                    hide:
+                    {
+                        effect: "size", //Same effect as for showing
+                        duration: 1000
+                    },
+                    width: 1200,
+                    height: 525,
+                    resizable: false
+                });
+        }
+
+        function dialog2() {
+
+            var $activeDialogs = $(".ui-dialog:visible").find('.ui-dialog-content');
+            $activeDialogs.dialog('close'); //Close any other open dialogs
+
+            //Function to load the jquery dialog - which displays the university menu
+            $("#northampton_dialog").dialog(
+                {
+                    show:
+                    {
+                        effect: "blind", //Blind effect, fades in for a total of 1 second
+                        duration: 1000
+                    },
+                    hide:
+                    {
+                        effect: "size", //Same effect as for showing
+                        duration: 1000
+                    },
+                    width: 1200,
+                    height: 525,
+                    resizable: false
+                });
+        }
+
+        function render(delta) {
+
+            if (clickInfo.userHasClicked) {
+
+                clickInfo.userHasClicked = false;
+
+                statsNode.innerHTML = '';
+
+                // The following will translate the mouse coordinates into a number
+                // ranging from -1 to 1, where
+                //      x == -1 && y == -1 means top-left, and
+                //      x ==  1 && y ==  1 means bottom right
+                var x = (clickInfo.x / SCREEN_WIDTH) * 2 - 1;
+                var y = -(clickInfo.y / SCREEN_HEIGHT) * 2 + 1;
+
+                // Set our direction vector to those initial values
+                directionVector.set(x, y, 1);
+
+                // Unproject the vector
+                projector.unprojectVector(directionVector, camera);
+
+                // Substract the vector representing the camera position
+                directionVector.sub(camera.position);
+
+                // Normalize the vector, to avoid large numbers from the
+                // projection and substraction
+                directionVector.normalize();
+
+                // Now direction vector holds the right numbers
+                raycaster.set(camera.position, directionVector);
+
+                // Raycaster intersects with all objects in the scene:
+                // (The second arguments means "recursive")
+                var intersects = raycaster.intersectObjects(scene.children, true);
+
+                if (intersects.length) {
+                    // intersections are, by default, ordered by distance,
+                    // so we only care for the first one. The intersection
+                    // object holds the intersection point, the face that's
+                    // been "hit" by the ray, and the object to which that
+                    // face belongs. We only care for the object itself.
+                    var target = intersects[0].object;
+                   /* statsNode.innerHTML = 'Name: ' + target.name
+                      + '<br>'
+                      + 'ID: ' + target.id;*/
+
+                    console.log(target.id);
+
+                    //Nottingham University Booth ID (This wil change as more components are added to sketchup model)
+                    if (target.id == 1253)
+                    {
+                        dialog(); //Run the function to display the jQuery dialog, when this booth is clicked
+                    }
+
+                    if (target.id == 1152)
+                    {
+                        dialog2();
+                    }
+                    
+                   /* marker.position.x = intersects[0].point.x;
+                    marker.position.y = intersects[0].point.y;
+                    marker.position.z = intersects[0].point.z;*/
+                }
+
+            }
+            renderer.render(scene, camera);
+        }
+
+        function animate() {
+
+            var delta = clock.getDelta();
+            requestAnimationFrame(animate);
+            render(delta);
+            TWEEN.update();
+            movement();
+        }
+
+    </script>
+    
+    <script src="js/nottingham_menu.js"></script>
+    <script src="js/northampton_menu.js"></script>
+    <script src="js/nottingham_courses.js"></script>
+    <script src="js/northampton_courses.js"></script>
+
+    <script>
+        // Canvas loader from the following resource http://heartcode.robertpataki.com/canvasloader/
+        var cl = new CanvasLoader('canvasloader-container'); //loader can be set with the following values e.g. colour, diameter
+        cl.setColor('#8acc33'); // default is '#000000'
+        cl.setShape('rect'); // default is 'oval'
+        cl.setDiameter(84); // default is 40
+        cl.setDensity(35); // default is 40
+        cl.setRange(1.2); // default is 1.3
+        cl.setFPS(30); // default is 24     
+
+        var loaderObj = document.getElementById("canvasLoader");
+        loaderObj.style.position = "absolute";
+        loaderObj.style["top"] = cl.getDiameter() * -0.5 + "px";
+        loaderObj.style["left"] = cl.getDiameter() * -0.5 + "px";
+
+        //When the scene is loading display the loading symbol and position it centrally
+        cl.show(); // Hidden by default
+    </script>
+
+    <script>
+        function showInfo(menuItem) {
+            $('.menus').each(function (index) {
+                if ($(this).attr("id") == menuItem) {
+                    $(this).show(); //When clicking on a link with class menus, if the id is passed to this function show that link and hide others
+                }
+                else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        function showCourses(courseItem) {
+            $('.course_a_z').each(function (index) {
+                if ($(this).attr("id") == courseItem) {
+                    $(this).show();
+                }
+                else {
+                    $(this).hide();
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

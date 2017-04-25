@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Feedback</title>
+
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script> 
+    
+    <style type="text/css">
+
+        *{ 
+            margin:0; padding:0;
+          }
+
+            body
+            { 
+                font:100% normal Arial, Helvetica, sans-serif;
+                background-color: #C9D9D8;
+            }
+
+            form,input,select,textarea
+            {
+                 margin:0; 
+                 padding:0; 
+                 color:#fff;
+            }
+
+            div.box
+            {
+                margin:0 auto;
+                width:500px;
+                background:#222;
+                position:relative;
+                top:50px;
+                border:1px solid #262626;
+            }
+
+            div.box h1
+            { 
+                color:#ffff80;
+                font-size:18px;
+                text-align:center;
+                padding:5px 0 5px 5px;
+                border-bottom:1px solid #161712;
+                border-top:1px solid #161712; 
+            }
+
+            div.box label
+            {
+                width:100%;
+                display: block;
+                background:#1C1C1C;
+                border-top:1px solid #262626;
+                border-bottom:1px solid #161712;
+                padding:10px 0 10px 0;
+            }
+
+           
+            div.box label span
+            {
+                display: block;
+                color:#bbb;
+                font-size:16px;
+                float:left;
+                width:100px;
+                text-align:right;
+                padding:5px 20px 0 0;
+            }
+
+            div.box .input_text
+            {
+                padding:10px 10px;
+                margin:0 0 20px 0px; /*top, right, bottom, left*/
+                width:200px;
+                background:#262626;
+                border-bottom: 1px double #171717;
+                border-top: 1px double #171717;
+                border-left:1px double #333;
+                border-right:1px double #333;
+            }
+
+             #rating
+             {
+                padding:10px 10px;
+                margin:0 0 20px 0px; /*top, right, bottom, left*/
+                width:200px;
+                background:#262626;
+                border-bottom: 1px double #171717;
+                border-top: 1px double #171717;
+                border-left:1px double #333;
+                border-right:1px double #333;
+             }
+
+             #rating:focus
+             {
+                background-color: #476b6b;
+             }
+
+            div.box .input_text:focus
+            {
+                 background-color: #476b6b;
+            }
+
+            div.box .message:focus
+            {
+                 background-color: #476b6b;
+            }
+
+            div.box .message
+            {
+                padding:7px 7px;
+                width:460px;
+                background:#262626;
+                border-bottom: 1px double #171717;
+                border-top: 1px double #171717;
+                border-left:1px double #333;
+                border-right:1px double #333;
+                overflow:hidden;
+                height:90px;
+            }
+
+            .required
+            {
+                width:100%;
+                display: block;
+                padding:10px 0 10px 0;
+            }
+
+            div.box .button
+            {
+                margin:0 0 20px 0; /*top, right, bottom, left*/
+                padding:4px 7px;
+                background:#CC0000;
+                border:0px;
+                position: relative;
+                top:10px;
+                left:142px;
+                width:120px;
+            }
+
+             input[type='checkbox']
+              {
+                    width:22px;
+                    height:22px;
+                }
+
+    </style>
+
+
+    <script>
+        function submit_check()
+        {
+            if (document.feedbackForm.name.value.trim() == "" ||
+                document.feedbackForm.rating.value.trim() == ""
+                || document.feedbackForm.well_feedback.value.trim() == "" ||
+                document.feedbackForm.improve_feedback.value.trim() == "")
+            {          
+                alert("One or more required fields not filled out");
+                return false;
+            };
+        }
+    </script>
+
+</head>
+
+<body>
+
+    <a style="float:left;" href=" index.html">Back to Home Page</a>
+    <form onsubmit="return submit_check()" action="feedback.php" method="post" name="feedbackForm">
+        <div class="box">
+            <h1>Virtual University Fair Feedback Form</h1>
+
+            <label>
+                <span>First and Last Name *</span>
+                <input type="text" class="input_text" name="name" id="name" autofocus />
+            </label>
+
+            <label>
+                <span>Rating out of 10 *</span>
+                <select class="required" id="rating" name="rating">
+                    <option value="">Choose an option</option> 
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </label>
+
+            <label>
+                <span style="width:100%; text-align:center; color:#ffff80;">Check each box, you feel helps
+                 make a virtual University fair viable</span><br />
+            </label>
+
+            <label>
+                <span style="width:90%;">Easier for international students to check potential universities</span>
+                <input type="checkbox" name="international" value="1"><br /><br />
+                <span style="width:90%;">Compare courses between universities</span>
+                <input type="checkbox" name="compare" value="1"><br /><br />
+                <span style="width:90%;">More accessible i.e. No travelling needed</span>
+                <input type="checkbox" name="travel" value="1"><br /><br />
+                <span style="width:90%;">Can be available all year round, rather than specific times</span>
+                <input type="checkbox" name="open" value="1"><br /><br />
+                <span style="width:90%;">Allows universities to reach a wider audience</span>
+                <input type="checkbox" name="audience" value="1">
+            </label>
+
+            <label>
+                <span style ="width:80%; color:#ffff80;">What did you think worked well in the virtual fair? *</span><br /><br />
+                <textarea class="message" name="well_feedback" id="feedback"></textarea>
+                <br /><br />
+
+                <span style="width:80%; color:#ffff80;">What didn't work so well/areas for improvement? *</span><br /><br />
+                <textarea class="message" name="improve_feedback" id="feedback"></textarea>
+                <br /><br />
+
+                <span class="required">
+                    <span style="color:red; font-size:12px">* = Required Field</span>
+                </span>
+
+                <input style="width:70px;" type="reset" class="button" value="Reset" />
+                 &nbsp;&nbsp;
+                <input type="submit" class="button" id="submit" value="Submit Feedback" />               
+            </label>
+        </div>
+    </form>
+
+</body>
+
+</html>
